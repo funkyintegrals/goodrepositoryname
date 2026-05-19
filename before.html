@@ -290,6 +290,8 @@ import {
   getDocs,
   doc,
   updateDoc
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -369,8 +371,10 @@ async function loadChaptersFromFirestore() {
   try {
     sidebar.innerHTML = "";
     activeChapters = [];
+    const chaptersCollection = collection(db, "chapters"); 
+    const orderedQuery = query(chaptersCollection, orderBy("order", "asc"));
     
-    const snap = await getDocs(collection(db, "chapters"));
+    const snap = await getDocs(orderedQuery);
     
     snap.forEach(docObj => {
       activeChapters.push({
