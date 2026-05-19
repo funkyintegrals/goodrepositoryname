@@ -1,126 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Archive</title>
 
 <style>
-body {
-  margin: 0;
-  height: 100vh;
-  background: radial-gradient(circle at top, #241a3a, #0f0b18);
-  font-family: monospace;
-  color: white;
-  overflow: hidden;
+body{
+  margin:0;
+  height:100vh;
+  background:radial-gradient(circle at top,#241a3a,#0f0b18);
+  font-family:monospace;
+  color:white;
+  overflow:hidden;
 }
 
-.topbar {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 9999;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.topbar{
+  position:fixed;
+  top:10px;
+  left:10px;
+  z-index:9999;
+  display:flex;
+  gap:8px;
+  align-items:center;
 }
 
-.topbar button {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
+.topbar button{
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.2);
+  color:white;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
 }
 
-.status {
-  font-size: 12px;
-  opacity: 0.8;
+.status{
+  font-size:12px;
+  opacity:0.8;
 }
 
-.app {
-  width: 920px;
-  height: 540px;
-  margin: 60px auto;
-  display: flex;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px;
-  backdrop-filter: blur(18px);
-  overflow: hidden;
+.app{
+  width:920px;
+  height:540px;
+  margin:60px auto;
+  display:none;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:16px;
+  backdrop-filter:blur(18px);
+  overflow:hidden;
 }
 
-.sidebar {
-  width: 220px;
-  padding: 12px;
-  background: rgba(255,255,255,0.04);
-  border-right: 1px solid rgba(255,255,255,0.08);
+.sidebar{
+  width:220px;
+  padding:12px;
+  background:rgba(255,255,255,0.04);
+  border-right:1px solid rgba(255,255,255,0.08);
 }
 
-.chapter {
-  padding: 8px;
-  margin-bottom: 6px;
-  border-radius: 8px;
-  cursor: pointer;
+.chapter{
+  padding:8px;
+  margin-bottom:6px;
+  border-radius:8px;
+  cursor:pointer;
 }
 
-.chapter:hover {
-  background: rgba(255,255,255,0.08);
+.chapter:hover{
+  background:rgba(255,255,255,0.08);
 }
 
-.content {
-  flex: 1;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
+.content{
+  flex:1;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
 }
 
-.title {
-  font-size: 18px;
-  margin-bottom: 10px;
+.title{
+  font-size:18px;
+  margin-bottom:10px;
 }
 
-.readonly {
-  flex: 1;
-  white-space: pre-wrap;
+.readonly{
+  flex:1;
+  white-space:pre-wrap;
 }
 
-.hidden {
-  display: none;
+.hidden{
+  display:none;
 }
 
-/* LOGIN MODAL */
-#modalOverlay {
-  position: fixed;
-  inset: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
-  z-index: 10000;
+#modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,0.6);
+  z-index:10000;
 }
 
-.modal {
-  width: 320px;
-  padding: 16px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
+.panel{
+  width:320px;
+  padding:16px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
 }
 
-.modal input {
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 8px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: white;
-  border-radius: 8px;
+.panel input{
+  width:100%;
+  margin-bottom:8px;
+  padding:8px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.15);
+  color:white;
+  border-radius:8px;
 }
 
-.creatorBtn {
-  display: none;
+button{
+  cursor:pointer;
 }
 </style>
 </head>
@@ -129,22 +127,21 @@ body {
 
 <div class="topbar">
   <button id="openLogin">Login</button>
-  <button id="creatorBtn" class="creatorBtn">Creator Panel</button>
   <span class="status" id="status">Not logged in</span>
+  <button id="editBtn" class="hidden">Edit</button>
 </div>
 
-<div id="modalOverlay">
-  <div class="modal">
-    <input id="email" placeholder="email" />
-    <input id="password" type="password" placeholder="password" />
+<div id="modal">
+  <div class="panel">
+    <input id="email" placeholder="email">
+    <input id="password" type="password" placeholder="password">
     <button id="loginBtn">Login</button>
     <button id="closeModal">Close</button>
   </div>
 </div>
 
-<div class="app">
+<div class="app" id="app">
   <div class="sidebar" id="sidebar"></div>
-
   <div class="content">
     <div class="title" id="title">...</div>
     <div class="readonly" id="reader">...</div>
@@ -177,102 +174,109 @@ const firebaseConfig = {
   appId: "1:417148050533:web:c6e8b7c0de0495a7ea3a8c"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
 const ADMIN_UID = "YOUR_UID_HERE";
 
+const appFirebase = initializeApp(firebaseConfig);
+const auth = getAuth(appFirebase);
+const db = getFirestore(appFirebase);
+
 const openLogin = document.getElementById("openLogin");
-const modal = document.getElementById("modalOverlay");
+const modal = document.getElementById("modal");
 const closeModal = document.getElementById("closeModal");
+const loginBtn = document.getElementById("loginBtn");
 
 const email = document.getElementById("email");
 const password = document.getElementById("password");
-const loginBtn = document.getElementById("loginBtn");
 
 const status = document.getElementById("status");
-const creatorBtn = document.getElementById("creatorBtn");
+const editBtn = document.getElementById("editBtn");
 
+const appUI = document.getElementById("app");
 const sidebar = document.getElementById("sidebar");
 const title = document.getElementById("title");
 const reader = document.getElementById("reader");
 
 const locked = {
-  title: "...",
-  text: "Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη."
+  title:"...",
+  text:"Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη."
 };
 
 let user = null;
 
-openLogin.onclick = () => modal.style.display = "flex";
-closeModal.onclick = () => modal.style.display = "none";
-
-loginBtn.onclick = async () => {
-  await signInWithEmailAndPassword(auth, email.value, password.value);
-  modal.style.display = "none";
-};
-
-onAuthStateChanged(auth, u => {
-  user = u;
-
-  if (!u) {
-    status.textContent = "Not logged in";
-    creatorBtn.style.display = "none";
-    loadLocked();
-    return;
-  }
-
-  status.textContent = "Logged in";
-
-  if (u.uid === ADMIN_UID) {
-    creatorBtn.style.display = "inline-block";
-  } else {
-    creatorBtn.style.display = "none";
-  }
-
-  loadChapters();
-});
-
-function loadLocked() {
+function renderLocked(){
   sidebar.innerHTML = "";
 
-  const div = document.createElement("div");
-  div.className = "chapter";
-  div.innerText = locked.title;
+  const c = document.createElement("div");
+  c.className = "chapter";
+  c.innerText = locked.title;
 
-  div.onclick = () => {
+  c.onclick = () => {
     title.innerText = locked.title;
     reader.innerText = locked.text;
   };
 
-  sidebar.appendChild(div);
+  sidebar.appendChild(c);
 
   title.innerText = locked.title;
   reader.innerText = locked.text;
 }
 
-async function loadChapters() {
+async function loadChapters(){
   sidebar.innerHTML = "";
 
-  const snap = await getDocs(collection(db, "chapters"));
+  const snap = await getDocs(collection(db,"chapters"));
 
-  snap.forEach(d => {
-    const div = document.createElement("div");
-    div.className = "chapter";
-    div.innerText = d.data().title;
+  snap.forEach(d=>{
+    const c = document.createElement("div");
+    c.className = "chapter";
+    c.innerText = d.data().title;
 
-    div.onclick = async () => {
-      const data = (await getDoc(doc(db, "chapters", d.id))).data();
+    c.onclick = async ()=>{
+      const data = (await getDoc(doc(db,"chapters",d.id))).data();
       title.innerText = data.title;
       reader.innerText = data.text;
     };
 
-    sidebar.appendChild(div);
+    sidebar.appendChild(c);
   });
 }
 
-loadLocked();
+function renderState(u){
+  user = u;
+
+  if(!u){
+    status.innerText = "Not logged in";
+    editBtn.classList.add("hidden");
+    appUI.style.display = "flex";
+    renderLocked();
+    return;
+  }
+
+  status.innerText = "Logged in";
+
+  if(u.uid === ADMIN_UID){
+    editBtn.classList.remove("hidden");
+  }else{
+    editBtn.classList.add("hidden");
+  }
+
+  appUI.style.display = "flex";
+  loadChapters();
+}
+
+openLogin.onclick = ()=> modal.style.display = "flex";
+closeModal.onclick = ()=> modal.style.display = "none";
+
+loginBtn.onclick = async ()=>{
+  await signInWithEmailAndPassword(auth,email.value,password.value);
+  modal.style.display = "none";
+};
+
+onAuthStateChanged(auth, u=>{
+  renderState(u);
+});
+
+renderState(null);
 
 </script>
 
