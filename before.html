@@ -1,124 +1,236 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Archive</title>
 
 <style>
-body{
-  margin:0;
-  height:100vh;
-  background:radial-gradient(circle at top,#241a3a,#0f0b18);
-  font-family:monospace;
-  color:white;
-  overflow:hidden;
+* {
+  box-sizing: border-box;
 }
 
-.topbar{
-  position:fixed;
-  top:10px;
-  left:10px;
-  z-index:9999;
-  display:flex;
-  gap:8px;
-  align-items:center;
+body {
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle at top, #1e1233, #090514);
+  font-family: monospace;
+  color: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.topbar button{
-  background:rgba(255,255,255,0.12);
-  border:1px solid rgba(255,255,255,0.2);
-  color:white;
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer;
+.topbar {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 9999;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-.status{
-  font-size:12px;
-  opacity:0.8;
+.topbar button, .panel button, .editor-controls button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: monospace;
+  transition: background 0.2s, border-color 0.2s;
 }
 
-.app{
-  width:920px;
-  height:540px;
-  margin:60px auto;
-  display:none;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.12);
-  border-radius:16px;
-  backdrop-filter:blur(18px);
-  overflow:hidden;
+.topbar button:hover, .panel button:hover, .editor-controls button:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.sidebar{
-  width:220px;
-  padding:12px;
-  background:rgba(255,255,255,0.04);
-  border-right:1px solid rgba(255,255,255,0.08);
+.status {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
-.chapter{
-  padding:8px;
-  margin-bottom:6px;
-  border-radius:8px;
-  cursor:pointer;
+.app {
+  width: 960px;
+  height: 580px;
+  margin: auto;
+  display: flex;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
-.chapter:hover{
-  background:rgba(255,255,255,0.08);
+.sidebar {
+  width: 260px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-y: auto;
 }
 
-.content{
-  flex:1;
-  padding:18px;
-  display:flex;
-  flex-direction:column;
+.chapter {
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.title{
-  font-size:18px;
-  margin-bottom:10px;
+.chapter:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-.readonly{
-  flex:1;
-  white-space:pre-wrap;
+.chapter.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
-.hidden{
-  display:none;
+.content {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
 
-#modal{
-  position:fixed;
-  inset:0;
-  display:none;
-  justify-content:center;
-  align-items:center;
-  background:rgba(0,0,0,0.6);
-  z-index:10000;
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+  letter-spacing: 0.5px;
 }
 
-.panel{
-  width:320px;
-  padding:16px;
-  border-radius:12px;
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.15);
+.viewport {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.panel input{
-  width:100%;
-  margin-bottom:8px;
-  padding:8px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.15);
-  color:white;
-  border-radius:8px;
+.readonly {
+  flex: 1;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #dddddd;
 }
 
-button{
-  cursor:pointer;
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+}
+
+.editor-pane input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 16px;
+}
+
+.editor-pane textarea {
+  width: 100%;
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.editor-pane input:focus, .editor-pane textarea:focus, .panel input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.editor-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+#modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+}
+
+.panel {
+  width: 340px;
+  padding: 24px;
+  border-radius: 14px;
+  background: rgba(20, 15, 35, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.panel input {
+  width: 100%;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 6px;
+  font-family: monospace;
+}
+
+.panel-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.panel-row button {
+  flex: 1;
+}
+
+.hidden {
+  display: none !important;
 }
 </style>
 </head>
@@ -126,34 +238,49 @@ button{
 <body>
 
 <div class="topbar">
-  <button id="openLogin">Login</button>
+  <button id="authActionBtn">Login</button>
   <span class="status" id="status">Not logged in</span>
   <button id="editBtn" class="hidden">Edit</button>
 </div>
 
 <div id="modal">
   <div class="panel">
-    <input id="email" placeholder="email">
+    <h3>Authentication</h3>
+    <input id="email" type="email" placeholder="email">
     <input id="password" type="password" placeholder="password">
-    <button id="loginBtn">Login</button>
-    <button id="closeModal">Close</button>
+    <div class="panel-row">
+      <button id="loginBtn">Login</button>
+      <button id="closeModal">Close</button>
+    </div>
   </div>
 </div>
 
 <div class="app" id="app">
   <div class="sidebar" id="sidebar"></div>
   <div class="content">
-    <div class="title" id="title">...</div>
-    <div class="readonly" id="reader">...</div>
+    <div class="viewport" id="viewMode">
+      <div class="title" id="title">...</div>
+      <div class="readonly" id="reader">...</div>
+    </div>
+    <div class="viewport hidden" id="editMode">
+      <div class="editor-pane">
+        <input id="editTitle" type="text" placeholder="Chapter Title">
+        <textarea id="editText" placeholder="Chapter content..."></textarea>
+        <div class="editor-controls">
+          <button id="saveBtn">Save</button>
+          <button id="cancelBtn">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
   signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -161,8 +288,8 @@ import {
   getFirestore,
   collection,
   getDocs,
-  getDoc,
-  doc
+  doc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -174,110 +301,224 @@ const firebaseConfig = {
   appId: "1:417148050533:web:c6e8b7c0de0495a7ea3a8c"
 };
 
-const ADMIN_UID = "YOUR_UID_HERE";
+const SPECUID = "my_uid_here";
 
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
 
-const openLogin = document.getElementById("openLogin");
+const authActionBtn = document.getElementById("authActionBtn");
 const modal = document.getElementById("modal");
 const closeModal = document.getElementById("closeModal");
 const loginBtn = document.getElementById("loginBtn");
-
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
 const status = document.getElementById("status");
 const editBtn = document.getElementById("editBtn");
 
-const appUI = document.getElementById("app");
 const sidebar = document.getElementById("sidebar");
-const title = document.getElementById("title");
-const reader = document.getElementById("reader");
+const viewMode = document.getElementById("viewMode");
+const editMode = document.getElementById("editMode");
 
-const locked = {
-  title:"...",
-  text:"Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη."
+const titleDisplay = document.getElementById("title");
+const readerDisplay = document.getElementById("reader");
+
+const editTitleInput = document.getElementById("editTitle");
+const editTextWindow = document.getElementById("editText");
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+const lockedData = {
+  title: "...",
+  text: "Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη."
 };
 
-let user = null;
+let currentUser = null;
+let activeChapters = [];
+let selectedChapterId = null;
 
-function renderLocked(){
+function renderGuestMode() {
   sidebar.innerHTML = "";
+  editBtn.classList.add("hidden");
+  editMode.classList.add("hidden");
+  viewMode.classList.remove("hidden");
 
-  const c = document.createElement("div");
-  c.className = "chapter";
-  c.innerText = locked.title;
-
-  c.onclick = () => {
-    title.innerText = locked.title;
-    reader.innerText = locked.text;
+  const fallbackItem = document.createElement("div");
+  fallbackItem.className = "chapter active";
+  fallbackItem.innerText = lockedData.title;
+  
+  fallbackItem.onclick = () => {
+    titleDisplay.innerText = lockedData.title;
+    readerDisplay.innerText = lockedData.text;
   };
-
-  sidebar.appendChild(c);
-
-  title.innerText = locked.title;
-  reader.innerText = locked.text;
+  
+  sidebar.appendChild(fallbackItem);
+  titleDisplay.innerText = lockedData.title;
+  readerDisplay.innerText = lockedData.text;
 }
 
-async function loadChapters(){
-  sidebar.innerHTML = "";
+async function renderAppMode(user) {
+  editMode.classList.add("hidden");
+  viewMode.classList.remove("hidden");
 
-  const snap = await getDocs(collection(db,"chapters"));
-
-  snap.forEach(d=>{
-    const c = document.createElement("div");
-    c.className = "chapter";
-    c.innerText = d.data().title;
-
-    c.onclick = async ()=>{
-      const data = (await getDoc(doc(db,"chapters",d.id))).data();
-      title.innerText = data.title;
-      reader.innerText = data.text;
-    };
-
-    sidebar.appendChild(c);
-  });
-}
-
-function renderState(u){
-  user = u;
-
-  if(!u){
-    status.innerText = "Not logged in";
-    editBtn.classList.add("hidden");
-    appUI.style.display = "flex";
-    renderLocked();
-    return;
-  }
-
-  status.innerText = "Logged in";
-
-  if(u.uid === ADMIN_UID){
+  if (user.uid === SPECUID) {
     editBtn.classList.remove("hidden");
-  }else{
+  } else {
     editBtn.classList.add("hidden");
   }
 
-  appUI.style.display = "flex";
-  loadChapters();
+  await loadChaptersFromFirestore();
 }
 
-openLogin.onclick = ()=> modal.style.display = "flex";
-closeModal.onclick = ()=> modal.style.display = "none";
+async function loadChaptersFromFirestore() {
+  try {
+    sidebar.innerHTML = "";
+    activeChapters = [];
+    
+    const snap = await getDocs(collection(db, "chapters"));
+    
+    snap.forEach(docObj => {
+      activeChapters.push({
+        id: docObj.id,
+        ...docObj.data()
+      });
+    });
 
-loginBtn.onclick = async ()=>{
-  await signInWithEmailAndPassword(auth,email.value,password.value);
+    if (activeChapters.length === 0) {
+      titleDisplay.innerText = "No chapters found";
+      readerDisplay.innerText = "The archive is currently empty.";
+      return;
+    }
+
+    activeChapters.forEach(chapter => {
+      const item = document.createElement("div");
+      item.className = "chapter";
+      item.innerText = chapter.title;
+      item.setAttribute("data-id", chapter.id);
+
+      item.onclick = () => {
+        selectChapter(chapter.id);
+      };
+
+      sidebar.appendChild(item);
+    });
+
+    if (selectedChapterId && activeChapters.some(c => c.id === selectedChapterId)) {
+      selectChapter(selectedChapterId);
+    } else {
+      selectChapter(activeChapters[0].id);
+    }
+
+  } catch (err) {
+    titleDisplay.innerText = "Error Loading Archive";
+    readerDisplay.innerText = "Could not fetch resources from database: " + err.message;
+  }
+}
+
+function selectChapter(id) {
+  selectedChapterId = id;
+  const target = activeChapters.find(c => c.id === id);
+  
+  document.querySelectorAll(".sidebar .chapter").forEach(el => {
+    if (el.getAttribute("data-id") === id) {
+      el.classList.add("active");
+    } else {
+      el.classList.remove("active");
+    }
+  });
+
+  if (target) {
+    titleDisplay.innerText = target.title;
+    readerDisplay.innerText = target.text;
+    
+    editTitleInput.value = target.title;
+    editTextWindow.value = target.text;
+  }
+}
+
+authActionBtn.onclick = async () => {
+  if (currentUser) {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      alert("Error logging out: " + err.message);
+    }
+  } else {
+    emailInput.value = "";
+    passwordInput.value = "";
+    modal.style.display = "flex";
+  }
+};
+
+closeModal.onclick = () => {
   modal.style.display = "none";
 };
 
-onAuthStateChanged(auth, u=>{
-  renderState(u);
+loginBtn.onclick = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    modal.style.display = "none";
+  } catch (err) {
+    alert("Authentication failed: " + err.message);
+  }
+};
+
+editBtn.onclick = () => {
+  if (!currentUser || currentUser.uid !== SPECUID || !selectedChapterId) return;
+  viewMode.classList.add("hidden");
+  editMode.classList.remove("hidden");
+};
+
+cancelBtn.onclick = () => {
+  editMode.classList.add("hidden");
+  viewMode.classList.remove("hidden");
+  if (selectedChapterId) {
+    selectChapter(selectedChapterId);
+  }
+};
+
+saveBtn.onclick = async () => {
+  if (!currentUser || currentUser.uid !== SPECUID || !selectedChapterId) return;
+  
+  const updatedTitle = editTitleInput.value.trim();
+  const updatedText = editTextWindow.value;
+
+  if (!updatedTitle) {
+    alert("Title cannot be left blank.");
+    return;
+  }
+
+  try {
+    const docRef = doc(db, "chapters", selectedChapterId);
+    await updateDoc(docRef, {
+      title: updatedTitle,
+      text: updatedText
+    });
+    
+    editMode.classList.add("hidden");
+    viewMode.classList.remove("hidden");
+    
+    await loadChaptersFromFirestore();
+  } catch (err) {
+    alert("Failed to commit change to Firestore: " + err.message);
+  }
+};
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  
+  if (!user) {
+    status.innerText = "Not logged in";
+    authActionBtn.innerText = "Login";
+    selectedChapterId = null;
+    activeChapters = [];
+    renderGuestMode();
+  } else {
+    status.innerText = "Logged in";
+    authActionBtn.innerText = "Logout";
+    renderAppMode(user);
+  }
 });
-
-renderState(null);
-
 </script>
 
 </body>
