@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8" />
 <title>Archive</title>
   <style>
     body {
@@ -8,7 +9,7 @@
       height: 100vh;
       background: radial-gradient(circle at top, #241a3a, #0f0b18);
       font-family: monospace;
-      color: rgba(255,255,255,0.9);
+      color: white;
       overflow: hidden;
     }
     
@@ -26,14 +27,9 @@
       width: 340px;
       padding: 18px;
       border-radius: 14px;
-    
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.15);
-    
       backdrop-filter: blur(14px);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    
-      color: white;
       position: relative;
     }
     
@@ -42,35 +38,24 @@
       top: 10px;
       right: 12px;
       cursor: pointer;
-      opacity: 0.7;
-    }
-    
-    .close:hover {
-      opacity: 1;
     }
     
     .app {
       width: 920px;
       height: 540px;
       margin: 60px auto;
-    
       display: none;
       flex-direction: row;
-    
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 16px;
-    
       backdrop-filter: blur(18px);
-      box-shadow: 0 30px 90px rgba(0,0,0,0.7);
-    
       overflow: hidden;
     }
     
     .sidebar {
       width: 220px;
       padding: 12px;
-    
       background: rgba(255,255,255,0.04);
       border-right: 1px solid rgba(255,255,255,0.08);
     }
@@ -80,22 +65,22 @@
       margin-bottom: 6px;
       border-radius: 8px;
       cursor: pointer;
-    
-      transition: 0.2s;
-      background: transparent;
     }
     
     .chapter:hover {
       background: rgba(255,255,255,0.08);
     }
     
+    .chapter.active {
+      background: rgba(255,255,255,0.12);
+    }
+    
     .content {
       flex: 1;
       padding: 18px;
-      position: relative;
-    
       display: flex;
       flex-direction: column;
+      position: relative;
     }
     
     .title {
@@ -107,84 +92,100 @@
     textarea {
       flex: 1;
       width: 100%;
-    
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
-    
       border-radius: 10px;
       padding: 10px;
-    
       color: white;
       outline: none;
       resize: none;
-    
-      backdrop-filter: blur(10px);
     }
     
     .readonly {
       flex: 1;
       white-space: pre-wrap;
-    
-      padding: 10px;
-      opacity: 0.9;
     }
     
     .edit-btn {
       position: absolute;
       bottom: 14px;
       right: 14px;
-    
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
-    
       color: white;
       padding: 8px 10px;
       border-radius: 10px;
-    
       cursor: pointer;
-    
-      backdrop-filter: blur(10px);
-      transition: 0.2s;
     }
     
-    .edit-btn:hover {
-      background: rgba(255,255,255,0.15);
+    .hidden {
+      display: none;
     }
-  </style>
-
-</head>
-
-<body>
-  <script>
+    </style>
+    </head>
+    
+    <body>
+    
+    <div class="overlay" id="overlay">
+      <div class="modal">
+        <div class="close" id="closeBtn">✕</div>
+        <h3>Login</h3>
+        <button id="loginBtn">Enter</button>
+      </div>
+    </div>
+    
+    <div class="app" id="app">
+    
+      <div class="sidebar" id="sidebar"></div>
+    
+      <div class="content">
+        <div class="title" id="title">...</div>
+    
+        <div class="readonly" id="reader">No chapter selected</div>
+    
+        <textarea id="editor" class="hidden"></textarea>
+    
+        <button class="edit-btn hidden" id="editBtn">Edit</button>
+      </div>
+    
+    </div>
+    
+    <script>
+    let currentUser = null;
+    let currentChapter = null;
+    let activeChapterId = null;
+    
+    const chapters = [
+      { id: "1", title: "Chapter I", text: "First text..." },
+      { id: "2", title: "Chapter II", text: "Second text..." },
+      { id: "3", title: "Chapter III", text: "Third text..." }
+    ];
+    
     const overlay = document.getElementById("overlay");
     const app = document.getElementById("app");
+    const sidebar = document.getElementById("sidebar");
     
-    const closeBtn = document.getElementById("closeBtn");
-    const loginBtn = document.getElementById("loginBtn");
-    
+    const title = document.getElementById("title");
     const reader = document.getElementById("reader");
     const editor = document.getElementById("editor");
     const editBtn = document.getElementById("editBtn");
-    const title = document.getElementById("title");
-    const overlay = document.getElementById("overlay");
-    const chapters = [
-      { id: "1", title: "Chapter I", text: "..." },
-      { id: "2", title: "Chapter II", text: "..." },
-      { id: "3", title: "Chapter III", text: "..." }
-    ];
-
-    let state = "locked"; 
     
-    function showOverlay() {
-      overlay.style.display = "flex";
-      app.style.display = "none";
-    }
+    const loginBtn = document.getElementById("loginBtn");
+    const closeBtn = document.getElementById("closeBtn");
     
     function showDenied() {
-      overlay.style.display = "none";
-      app.style.display = "none";
       document.body.innerHTML = `
-        <div style="display:flex;height:100vh;justify-content:center;align-items:center;background:#393057;color:white;font-family:monospace;">
+        <div style="
+          display:flex;
+          height:100vh;
+          justify-content:center;
+          align-items:center;
+          background:#0f0b18;
+          color:white;
+          font-family:monospace;
+          text-align:center;
+          padding:20px;
+        ">
           Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη.
         </div>
       `;
@@ -194,17 +195,11 @@
       overlay.style.display = "none";
       app.style.display = "flex";
     
-      title.innerText = "...";
-      reader.innerText = "...";
-      editor.style.display = "none";
-      editBtn.style.display = "none";
-      reader.style.display = "block";
-    
-      state = "unlocked";
+      renderChapters();
+      openChapter(chapters[0]);
     }
     
     function renderChapters() {
-      const sidebar = document.getElementById("sidebar");
       sidebar.innerHTML = "";
     
       chapters.forEach(ch => {
@@ -212,65 +207,70 @@
         div.className = "chapter";
         div.innerText = ch.title;
     
-        div.onclick = () => openChapter(ch);
+        div.onclick = () => {
+          setActive(ch.id);
+          openChapter(ch);
+        };
     
         sidebar.appendChild(div);
       });
     }
     
-    function openChapter(ch) {
-      document.getElementById("title").innerText = ch.title;
-      document.getElementById("reader").innerText = ch.text;
+    function setActive(id) {
+      activeChapterId = id;
+    
+      document.querySelectorAll(".chapter").forEach(el => {
+        el.classList.remove("active");
+      });
+    
+      const items = document.querySelectorAll(".chapter");
+      const index = chapters.findIndex(c => c.id === id);
+    
+      if (items[index]) {
+        items[index].classList.add("active");
+      }
     }
     
+    function openChapter(ch) {
+      currentChapter = ch;
+    
+      reader.style.opacity = 0;
+    
+      setTimeout(() => {
+        title.innerText = ch.title;
+        reader.innerText = ch.text;
+        reader.style.opacity = 1;
+      }, 120);
+    
+      editor.classList.add("hidden");
+      reader.classList.remove("hidden");
+    
+      editBtn.classList.add("hidden");
+    }
+    
+    function enterEditMode() {
+      editor.value = currentChapter.text;
+    
+      reader.classList.add("hidden");
+      editor.classList.remove("hidden");
+      editBtn.classList.remove("hidden");
+    }
     
     loginBtn.onclick = () => {
-      unlockApp(); // fake login for now
+      currentUser = "me";
+      unlockApp();
     };
     
     closeBtn.onclick = () => {
       showDenied();
     };
     
-    showOverlay();
+    editBtn.onclick = () => {
+      enterEditMode();
+    };
     
-
-    renderChapters();
-    openChapter(chapters[0]); // default view
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+    overlay.style.display = "flex";
   </script>
+
 </body>
 </html>
