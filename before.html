@@ -21,15 +21,7 @@ body {
   z-index: 9999;
   display: flex;
   gap: 8px;
-}
-
-.topbar input {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: white;
-  padding: 6px;
-  border-radius: 8px;
-  outline: none;
+  align-items: center;
 }
 
 .topbar button {
@@ -41,12 +33,16 @@ body {
   cursor: pointer;
 }
 
+.status {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
 .app {
   width: 920px;
   height: 540px;
   margin: 60px auto;
   display: flex;
-  flex-direction: row;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 16px;
@@ -84,18 +80,6 @@ body {
   margin-bottom: 10px;
 }
 
-textarea {
-  flex: 1;
-  width: 100%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-  padding: 10px;
-  color: white;
-  outline: none;
-  resize: none;
-}
-
 .readonly {
   flex: 1;
   white-space: pre-wrap;
@@ -105,16 +89,38 @@ textarea {
   display: none;
 }
 
-#deny {
+/* LOGIN MODAL */
+#modalOverlay {
   position: fixed;
   inset: 0;
   display: none;
   justify-content: center;
   align-items: center;
-  background: #0f0b18;
-  font-family: monospace;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+}
+
+.modal {
+  width: 320px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.modal input {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
   color: white;
-  text-align: center;
+  border-radius: 8px;
+}
+
+.creatorBtn {
+  display: none;
 }
 </style>
 </head>
@@ -122,20 +128,26 @@ textarea {
 <body>
 
 <div class="topbar">
-  <input id="email" placeholder="email">
-  <input id="password" type="password" placeholder="password">
-  <button id="loginBtn" type="button">Login</button>
+  <button id="openLogin">Login</button>
+  <button id="creatorBtn" class="creatorBtn">Creator Panel</button>
+  <span class="status" id="status">Not logged in</span>
 </div>
 
-<div id="deny">Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη.</div>
+<div id="modalOverlay">
+  <div class="modal">
+    <input id="email" placeholder="email" />
+    <input id="password" type="password" placeholder="password" />
+    <button id="loginBtn">Login</button>
+    <button id="closeModal">Close</button>
+  </div>
+</div>
 
-<div class="app" id="app">
+<div class="app">
   <div class="sidebar" id="sidebar"></div>
 
   <div class="content">
     <div class="title" id="title">...</div>
     <div class="readonly" id="reader">...</div>
-    <textarea id="editor" class="hidden"></textarea>
   </div>
 </div>
 
@@ -151,77 +163,91 @@ import {
 import {
   getFirestore,
   collection,
-  doc,
   getDocs,
-  getDoc
+  getDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAYxM0lgqwhy3cGjUyCqezNrZGXlt9k4VQ",
-  authDomain: "before-funkyintegrals.firebaseapp.com",
-  projectId: "before-funkyintegrals",
-  storageBucket: "before-funkyintegrals.firebasestorage.app",
-  messagingSenderId: "417148050533",
-  appId: "1:417148050533:web:c6e8b7c0de0495a7ea3a8c"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const ADMIN_UID = "YOUR_UID_HERE";
+
+const openLogin = document.getElementById("openLogin");
+const modal = document.getElementById("modalOverlay");
+const closeModal = document.getElementById("closeModal");
+
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
 
-const appUI = document.getElementById("app");
-const deny = document.getElementById("deny");
+const status = document.getElementById("status");
+const creatorBtn = document.getElementById("creatorBtn");
 
 const sidebar = document.getElementById("sidebar");
 const title = document.getElementById("title");
 const reader = document.getElementById("reader");
 
-const fallback = {
+const locked = {
   title: "...",
   text: "Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη."
 };
 
-let currentUser = null;
+let user = null;
+
+openLogin.onclick = () => modal.style.display = "flex";
+closeModal.onclick = () => modal.style.display = "none";
 
 loginBtn.onclick = async () => {
   await signInWithEmailAndPassword(auth, email.value, password.value);
+  modal.style.display = "none";
 };
 
-onAuthStateChanged(auth, user => {
-  currentUser = user;
+onAuthStateChanged(auth, u => {
+  user = u;
 
-  if (!user) {
-    appUI.style.display = "flex";
-    deny.style.display = "flex";
-    loadFallback();
+  if (!u) {
+    status.textContent = "Not logged in";
+    creatorBtn.style.display = "none";
+    loadLocked();
     return;
   }
 
-  deny.style.display = "none";
-  appUI.style.display = "flex";
+  status.textContent = "Logged in";
+
+  if (u.uid === ADMIN_UID) {
+    creatorBtn.style.display = "inline-block";
+  } else {
+    creatorBtn.style.display = "none";
+  }
+
   loadChapters();
 });
 
-function loadFallback() {
+function loadLocked() {
   sidebar.innerHTML = "";
 
   const div = document.createElement("div");
   div.className = "chapter";
-  div.innerText = fallback.title;
+  div.innerText = locked.title;
 
   div.onclick = () => {
-    title.innerText = fallback.title;
-    reader.innerText = fallback.text;
+    title.innerText = locked.title;
+    reader.innerText = locked.text;
   };
 
   sidebar.appendChild(div);
 
-  title.innerText = fallback.title;
-  reader.innerText = fallback.text;
+  title.innerText = locked.title;
+  reader.innerText = locked.text;
 }
 
 async function loadChapters() {
@@ -235,9 +261,7 @@ async function loadChapters() {
     div.innerText = d.data().title;
 
     div.onclick = async () => {
-      const docSnap = await getDoc(doc(db, "chapters", d.id));
-      const data = docSnap.data();
-
+      const data = (await getDoc(doc(db, "chapters", d.id))).data();
       title.innerText = data.title;
       reader.innerText = data.text;
     };
@@ -245,6 +269,8 @@ async function loadChapters() {
     sidebar.appendChild(div);
   });
 }
+
+loadLocked();
 
 </script>
 
