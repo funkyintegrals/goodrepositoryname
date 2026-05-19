@@ -2,142 +2,260 @@
 <html>
 <head>
 <title>Archive</title>
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  background: #393057;
-  font-family: monospace;
-  color: white;
-}
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.65);
-  display: none;
-  justify-content: center;
-  align-items: center;
-}
-
-
-.modal {
-  width: 320px;
-  background: white;
-  color: black;
-  border-radius: 10px;
-  padding: 16px;
-  position: relative;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-}
-
-.close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-
-.app {
-  width: 920px;
-  height: 540px;
-  margin: 60px auto;
-  background: #2f2550;
-  border-radius: 14px;
-  display: flex;
-  overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-}
-
-
-.sidebar {
-  width: 220px;
-  background: #241d44;
-  padding: 12px;
-  overflow-y: auto;
-  border-right: 1px solid rgba(255,255,255,0.05);
-}
-
-
-.chapter {
-  padding: 8px;
-  margin-bottom: 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  background: transparent;
-}
-
-.chapter:hover {
-  background: rgba(255,255,255,0.08);
-}
-
-
-.content {
-  flex: 1;
-  padding: 18px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-
-.title {
-  font-size: 18px;
-  margin-bottom: 10px;
-  opacity: 0.9;
-}
-
-
-textarea {
-  flex: 1;
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: white;
-  font-size: 14px;
-  line-height: 1.6;
-  resize: none;
-}
-
-
-.readonly {
-  flex: 1;
-  white-space: pre-wrap;
-  overflow-y: auto;
-  opacity: 0.95;
-}
-
-
-.edit-btn {
-  position: absolute;
-  bottom: 14px;
-  right: 14px;
-  background: #ffffff22;
-  border: none;
-  color: white;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.edit-btn:hover {
-  background: #ffffff33;
-}
-
-
-.denied {
-  text-align: center;
-  font-size: 16px;
-  opacity: 0.9;
-}
-</style>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #393057;
+      font-family: monospace;
+      color: white;
+    }
+    
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal {
+      width: 320px;
+      background: white;
+      color: black;
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    }
+    
+    .close {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    
+    .app {
+      width: 920px;
+      height: 540px;
+      margin: 60px auto;
+      background: #2f2550;
+      border-radius: 14px;
+      display: flex;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    }
+    
+    .sidebar {
+      width: 220px;
+      background: #241d44;
+      padding: 12px;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .chapter {
+      padding: 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+    
+    .chapter:hover {
+      background: rgba(255,255,255,0.08);
+    }
+    
+    .content {
+      flex: 1;
+      padding: 18px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .title {
+      font-size: 18px;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+    
+    textarea {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: white;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+    }
+    
+    .readonly {
+      flex: 1;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      opacity: 0.95;
+    }
+    
+    .edit-btn {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      background: #ffffff22;
+      border: none;
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .edit-btn:hover {
+      background: #ffffff33;
+    }
+    
+    .denied {
+      text-align: center;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .show-flex {
+      display: flex;
+    }
+    
+    .show-block {
+      display: block;
+    }
+  </style>
 
 </head>
 
 <body>
-  <div>Hello</div>
+  <script>
+    const overlay = document.getElementById("overlay");
+    const app = document.getElementById("app");
+    
+    const closeBtn = document.getElementById("closeBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    
+    const reader = document.getElementById("reader");
+    const editor = document.getElementById("editor");
+    const editBtn = document.getElementById("editBtn");
+    const title = document.getElementById("title");
+    const overlay = document.getElementById("overlay");
+    const chapters = [
+      { id: "1", title: "Chapter I", text: "..." },
+      { id: "2", title: "Chapter II", text: "..." },
+      { id: "3", title: "Chapter III", text: "..." }
+    ];
+
+    let state = "locked"; 
+    
+    function showOverlay() {
+      overlay.style.display = "flex";
+      app.style.display = "none";
+    }
+    
+    function showDenied() {
+      overlay.style.display = "none";
+      app.style.display = "none";
+      document.body.innerHTML = `
+        <div style="display:flex;height:100vh;justify-content:center;align-items:center;background:#393057;color:white;font-family:monospace;">
+          Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη.
+        </div>
+      `;
+    }
+    
+    function unlockApp() {
+      overlay.style.display = "none";
+      app.style.display = "flex";
+    
+      title.innerText = "...";
+      reader.innerText = "...";
+      editor.style.display = "none";
+      editBtn.style.display = "none";
+      reader.style.display = "block";
+    
+      state = "unlocked";
+    }
+    
+    function renderChapters() {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.innerHTML = "";
+    
+      chapters.forEach(ch => {
+        const div = document.createElement("div");
+        div.className = "chapter";
+        div.innerText = ch.title;
+    
+        div.onclick = () => openChapter(ch);
+    
+        sidebar.appendChild(div);
+      });
+    }
+    
+    function openChapter(ch) {
+      document.getElementById("title").innerText = ch.title;
+      document.getElementById("reader").innerText = ch.text;
+    }
+    
+    
+    loginBtn.onclick = () => {
+      unlockApp(); // fake login for now
+    };
+    
+    closeBtn.onclick = () => {
+      showDenied();
+    };
+    
+    showOverlay();
+    
+
+    renderChapters();
+    openChapter(chapters[0]); // default view
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+  </script>
 </body>
 </html>
