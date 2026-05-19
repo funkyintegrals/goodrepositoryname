@@ -19,6 +19,17 @@ body {
   top: 10px;
   left: 10px;
   z-index: 9999;
+  display: flex;
+  gap: 8px;
+}
+
+.topbar input {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  padding: 6px;
+  border-radius: 8px;
+  outline: none;
 }
 
 .topbar button {
@@ -93,16 +104,32 @@ textarea {
 .hidden {
   display: none;
 }
+
+#deny {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: #0f0b18;
+  font-family: monospace;
+  color: white;
+  text-align: center;
+}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <button id="loginBtn">Login</button>
+  <input id="email" placeholder="email">
+  <input id="password" type="password" placeholder="password">
+  <button id="loginBtn" type="button">Login</button>
 </div>
 
-<div class="app">
+<div id="deny">Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη.</div>
+
+<div class="app" id="app">
   <div class="sidebar" id="sidebar"></div>
 
   <div class="content">
@@ -117,8 +144,7 @@ textarea {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
+  signInWithEmailAndPassword,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -127,67 +153,60 @@ import {
   collection,
   doc,
   getDocs,
-  getDoc,
-  setDoc
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAYxM0lgqwhy3cGjUyCqezNrZGXlt9k4VQ",
-  authDomain: "before-funkyintegrals.firebaseapp.com",
-  projectId: "before-funkyintegrals",
-  storageBucket: "before-funkyintegrals.firebasestorage.app",
-  messagingSenderId: "417148050533",
-  appId: "1:417148050533:web:c6e8b7c0de0495a7ea3a8c"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
 
+const email = document.getElementById("email");
+const password = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
+
+const appUI = document.getElementById("app");
+const deny = document.getElementById("deny");
 
 const sidebar = document.getElementById("sidebar");
 const title = document.getElementById("title");
 const reader = document.getElementById("reader");
-const editor = document.getElementById("editor");
-
-let currentUser = null;
-let currentId = null;
 
 const fallback = {
-  id: "locked",
   title: "...",
   text: "Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη."
 };
 
-loginBtn.onclick = () => signInWithPopup(auth, provider);
+let currentUser = null;
+
+loginBtn.onclick = async () => {
+  await signInWithEmailAndPassword(auth, email.value, password.value);
+};
 
 onAuthStateChanged(auth, user => {
   currentUser = user;
-  loadChapters();
-});
 
-async function loadChapters() {
-  sidebar.innerHTML = "";
-
-  if (!currentUser) {
-    renderLocked();
+  if (!user) {
+    appUI.style.display = "flex";
+    deny.style.display = "flex";
+    loadFallback();
     return;
   }
 
-  const snap = await getDocs(collection(db, "chapters"));
+  deny.style.display = "none";
+  appUI.style.display = "flex";
+  loadChapters();
+});
 
-  snap.forEach(d => {
-    const div = document.createElement("div");
-    div.className = "chapter";
-    div.innerText = d.data().title;
-    div.onclick = () => openChapter(d.id);
-    sidebar.appendChild(div);
-  });
-}
-
-function renderLocked() {
+function loadFallback() {
   sidebar.innerHTML = "";
 
   const div = document.createElement("div");
@@ -197,8 +216,6 @@ function renderLocked() {
   div.onclick = () => {
     title.innerText = fallback.title;
     reader.innerText = fallback.text;
-    reader.classList.remove("hidden");
-    editor.classList.add("hidden");
   };
 
   sidebar.appendChild(div);
@@ -207,14 +224,26 @@ function renderLocked() {
   reader.innerText = fallback.text;
 }
 
-async function openChapter(id) {
-  currentId = id;
+async function loadChapters() {
+  sidebar.innerHTML = "";
 
-  const snap = await getDoc(doc(db, "chapters", id));
-  const data = snap.data();
+  const snap = await getDocs(collection(db, "chapters"));
 
-  title.innerText = data.title;
-  reader.innerText = data.text;
+  snap.forEach(d => {
+    const div = document.createElement("div");
+    div.className = "chapter";
+    div.innerText = d.data().title;
+
+    div.onclick = async () => {
+      const docSnap = await getDoc(doc(db, "chapters", d.id));
+      const data = docSnap.data();
+
+      title.innerText = data.title;
+      reader.innerText = data.text;
+    };
+
+    sidebar.appendChild(div);
+  });
 }
 
 </script>
