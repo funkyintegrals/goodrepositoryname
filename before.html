@@ -301,9 +301,6 @@ const firebaseConfig = {
   appId: "1:417148050533:web:c6e8b7c0de0495a7ea3a8c"
 };
 
-// Change this to match your secret writing UID
-const SPECUID = "my_uid_here";
-
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
@@ -358,17 +355,12 @@ function renderGuestMode() {
   readerDisplay.innerText = lockedData.text;
 }
 
-async function renderAppMode(user) {
+async function renderAppMode() {
   editMode.classList.add("hidden");
   viewMode.classList.remove("hidden");
-
-  // Local Client Check: Shows button if user matches SPECUID.
-  // If you decide to let anyone click "Edit", comment out this if/else block and just call editBtn.classList.remove("hidden");
-  if (user.uid === SPECUID) {
-    editBtn.classList.remove("hidden");
-  } else {
-    editBtn.classList.add("hidden"); 
-  }
+  
+  // Always expose the button if authenticated. Security rules handle actual authorization.
+  editBtn.classList.remove("hidden");
 
   await loadChaptersFromFirestore();
 }
@@ -494,7 +486,7 @@ saveBtn.onclick = async () => {
   try {
     const docRef = doc(db, "chapters", selectedChapterId);
     
-    // Fires request to Firebase. If database rules reject it, this throws an error immediately.
+    // Server validation check
     await updateDoc(docRef, {
       title: updatedTitle,
       text: updatedText
@@ -505,9 +497,9 @@ saveBtn.onclick = async () => {
     await loadChaptersFromFirestore();
     
   } catch (err) {
-    alert("Permission Denied: You do not have write rights. Reverting fields...");
+    alert("Permission Denied: Your account doesn't have write privileges. Rolling back changes...");
     
-    // Safety Catch: Closes editor and re-fetches original server state to strip malicious/unauthorized edits
+    // UI Recovery Mode: Resets the viewport container to display server-truth values
     editMode.classList.add("hidden");
     viewMode.classList.remove("hidden");
     await loadChaptersFromFirestore();
@@ -522,11 +514,11 @@ onAuthStateChanged(auth, user => {
     authActionBtn.innerText = "Login";
     selectedChapterId = null;
     activeChapters = [];
-    renderGuestMode();
+    renderGuestMode(); // Runs locally without firing network requests
   } else {
     status.innerText = "Logged in";
     authActionBtn.innerText = "Logout";
-    renderAppMode(user);
+    renderAppMode(); // Safe to execute database rules queries now
   }
 });
 </script>
