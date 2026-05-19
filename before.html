@@ -301,6 +301,7 @@ const firebaseConfig = {
   appId: "1:417148050533:web:c6e8b7c0de0495a7ea3a8c"
 };
 
+// Change this to match your secret writing UID
 const SPECUID = "my_uid_here";
 
 const appFirebase = initializeApp(firebaseConfig);
@@ -361,10 +362,12 @@ async function renderAppMode(user) {
   editMode.classList.add("hidden");
   viewMode.classList.remove("hidden");
 
+  // Local Client Check: Shows button if user matches SPECUID.
+  // If you decide to let anyone click "Edit", comment out this if/else block and just call editBtn.classList.remove("hidden");
   if (user.uid === SPECUID) {
     editBtn.classList.remove("hidden");
   } else {
-    editBtn.classList.add("hidden");
+    editBtn.classList.add("hidden"); 
   }
 
   await loadChaptersFromFirestore();
@@ -464,7 +467,7 @@ loginBtn.onclick = async () => {
 };
 
 editBtn.onclick = () => {
-  if (!currentUser || currentUser.uid !== SPECUID || !selectedChapterId) return;
+  if (!currentUser || !selectedChapterId) return;
   viewMode.classList.add("hidden");
   editMode.classList.remove("hidden");
 };
@@ -478,7 +481,7 @@ cancelBtn.onclick = () => {
 };
 
 saveBtn.onclick = async () => {
-  if (!currentUser || currentUser.uid !== SPECUID || !selectedChapterId) return;
+  if (!currentUser || !selectedChapterId) return;
   
   const updatedTitle = editTitleInput.value.trim();
   const updatedText = editTextWindow.value;
@@ -490,6 +493,8 @@ saveBtn.onclick = async () => {
 
   try {
     const docRef = doc(db, "chapters", selectedChapterId);
+    
+    // Fires request to Firebase. If database rules reject it, this throws an error immediately.
     await updateDoc(docRef, {
       title: updatedTitle,
       text: updatedText
@@ -497,10 +502,15 @@ saveBtn.onclick = async () => {
     
     editMode.classList.add("hidden");
     viewMode.classList.remove("hidden");
-    
     await loadChaptersFromFirestore();
+    
   } catch (err) {
-    alert("Failed to commit change to Firestore: " + err.message);
+    alert("Permission Denied: You do not have write rights. Reverting fields...");
+    
+    // Safety Catch: Closes editor and re-fetches original server state to strip malicious/unauthorized edits
+    editMode.classList.add("hidden");
+    viewMode.classList.remove("hidden");
+    await loadChaptersFromFirestore();
   }
 };
 
