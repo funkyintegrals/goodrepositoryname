@@ -1,309 +1,278 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Archive</title>
+<meta charset="UTF-8" />
+<title>Archive</title>
 
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: radial-gradient(circle at top, #241a3a, #0f0b18);
-      font-family: monospace;
-      color: white;
-      overflow: hidden;
-    }
-    
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(10, 8, 20, 0.65);
-      backdrop-filter: blur(6px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .modal {
-      width: 340px;
-      padding: 18px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(14px);
-    }
-    
-    .app {
-      width: 920px;
-      height: 540px;
-      margin: 60px auto;
-      display: none;
-      flex-direction: row;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 16px;
-      backdrop-filter: blur(18px);
-      overflow: hidden;
-    }
-    
-    .sidebar {
-      width: 220px;
-      padding: 12px;
-      background: rgba(255,255,255,0.04);
-      border-right: 1px solid rgba(255,255,255,0.08);
-    }
-    
-    .chapter {
-      padding: 8px;
-      margin-bottom: 6px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    
-    .chapter:hover {
-      background: rgba(255,255,255,0.08);
-    }
-    
-    .chapter.active {
-      background: rgba(255,255,255,0.12);
-    }
-    
-    .content {
-      flex: 1;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-    
-    .title {
-      font-size: 18px;
-      margin-bottom: 10px;
-      opacity: 0.9;
-    }
-    
-    textarea {
-      flex: 1;
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      padding: 10px;
-      color: white;
-      outline: none;
-      resize: none;
-    }
-    
-    .readonly {
-      flex: 1;
-      white-space: pre-wrap;
-    }
-    
-    .controls {
-      position: absolute;
-      bottom: 14px;
-      right: 14px;
-      display: flex;
-      gap: 8px;
-    }
-    
-    button {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: white;
-      padding: 8px 10px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    
-    .hidden {
-      display: none;
-    }
-  </style>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle at top, #241a3a, #0f0b18);
+  font-family: monospace;
+  color: white;
+  overflow: hidden;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 20, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  width: 340px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(14px);
+}
+
+.app {
+  width: 920px;
+  height: 540px;
+  margin: 60px auto;
+  display: none;
+  flex-direction: row;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  backdrop-filter: blur(18px);
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 220px;
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+.chapter {
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.chapter:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.content {
+  flex: 1;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+textarea {
+  flex: 1;
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px;
+  color: white;
+  outline: none;
+  resize: none;
+}
+
+.readonly {
+  flex: 1;
+  white-space: pre-wrap;
+}
+
+.hidden {
+  display: none;
+}
+
+#deny {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: #0f0b18;
+  font-family: monospace;
+  text-align: center;
+  padding: 20px;
+  color: white;
+}
+</style>
 </head>
-    
-<body>  
-  <div class="overlay" id="overlay">
-    <div class="modal">
-      <button id="loginBtn">Login with Google</button>
-    </div>
+
+<body>
+
+<div id="deny">Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη.</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button id="loginBtn">Login</button>
   </div>
-    
-  <div class="app" id="app">
-    
-    <div class="sidebar">
-      <div id="sidebar"></div>
-    </div>
-    
-    <div class="content">
-      <div class="title" id="title">...</div>
-    
-      <div class="readonly" id="reader">...</div>
-    
-      <textarea id="editor" class="hidden"></textarea>
-    
-      <div class="controls">
-        <button id="editBtn" class="hidden">Edit</button>
-        <button id="saveBtn" class="hidden">Save</button>
-        <button id="cancelBtn" class="hidden">Cancel</button>
-      </div>
-    </div>
-    
+</div>
+
+<div class="app" id="app">
+
+  <div class="sidebar" id="sidebar"></div>
+
+  <div class="content">
+    <div class="title" id="title">...</div>
+    <div class="readonly" id="reader">...</div>
+    <textarea id="editor" class="hidden"></textarea>
+
+    <button id="editBtn" class="hidden">Edit</button>
+    <button id="saveBtn" class="hidden">Save</button>
+    <button id="cancelBtn" class="hidden">Cancel</button>
   </div>
-    
-  <script type="module">
-    
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getAuth,
-      signInWithPopup,
-      GoogleAuthProvider,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    
-    import {
-      getFirestore,
-      collection,
-      doc,
-      getDocs,
-      getDoc,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID",
-      measurementId: "YOUR_MEASUREMENT_ID"
-    };
-    
-    const appFirebase = initializeApp(firebaseConfig);
-    const auth = getAuth(appFirebase);
-    const db = getFirestore(appFirebase);
-    const provider = new GoogleAuthProvider();
-    
-    const overlay = document.getElementById("overlay");
-    const appUI = document.getElementById("app");
-    
-    const sidebar = document.getElementById("sidebar");
-    const title = document.getElementById("title");
-    const reader = document.getElementById("reader");
-    const editor = document.getElementById("editor");
-    
-    const loginBtn = document.getElementById("loginBtn");
-    const editBtn = document.getElementById("editBtn");
-    const saveBtn = document.getElementById("saveBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    
-    let currentUser = null;
-    let currentId = null;
-    
-    const fallback = {
-      id: "locked",
-      title: "...",
-      text: "..."
-    };
-    
-    loginBtn.onclick = () => signInWithPopup(auth, provider);
-    
-    onAuthStateChanged(auth, user => {
-      currentUser = user;
-    
-      overlay.style.display = "none";
-      appUI.style.display = "flex";
-    
-      loadChapters();
-    });
-    
-    async function loadChapters() {
-      sidebar.innerHTML = "";
-    
-      if (!currentUser) {
-        renderFallback();
-        return;
-      }
-    
-      const snap = await getDocs(collection(db, "chapters"));
-    
-      snap.forEach(d => {
-        const div = document.createElement("div");
-        div.className = "chapter";
-        div.innerText = d.data().title;
-    
-        div.onclick = () => openChapter(d.id);
-    
-        sidebar.appendChild(div);
-      });
-    }
-    
-    function renderFallback() {
-      sidebar.innerHTML = "";
-    
-      const div = document.createElement("div");
-      div.className = "chapter active";
-      div.innerText = fallback.title;
-    
-      div.onclick = () => {
-        title.innerText = fallback.title;
-        reader.innerText = fallback.text;
-    
-        editor.classList.add("hidden");
-        reader.classList.remove("hidden");
-    
-        editBtn.classList.add("hidden");
-      };
-    
-      sidebar.appendChild(div);
-    
-      title.innerText = fallback.title;
-      reader.innerText = fallback.text;
-    }
-    
-    async function openChapter(id) {
-      currentId = id;
-    
-      const snap = await getDoc(doc(db, "chapters", id));
-      const data = snap.data();
-    
-      title.innerText = data.title;
-      reader.innerText = data.text;
-    
-      editor.value = data.text;
-    
-      editor.classList.add("hidden");
-      reader.classList.remove("hidden");
-    
-      if (currentUser) {
-        editBtn.classList.remove("hidden");
-      }
-    }
-    
-    editBtn.onclick = () => {
-      reader.classList.add("hidden");
-      editor.classList.remove("hidden");
-    
-      saveBtn.classList.remove("hidden");
-      cancelBtn.classList.remove("hidden");
-      editBtn.classList.add("hidden");
-    };
-    
-    cancelBtn.onclick = () => {
-      openChapter(currentId);
-    };
-    
-    saveBtn.onclick = async () => {
-      await setDoc(doc(db, "chapters", currentId), {
-        title: title.innerText,
-        text: editor.value
-      });
-    
-      openChapter(currentId);
-    };
-    
-  </script>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+const overlay = document.getElementById("overlay");
+const appUI = document.getElementById("app");
+const deny = document.getElementById("deny");
+
+const sidebar = document.getElementById("sidebar");
+const title = document.getElementById("title");
+const reader = document.getElementById("reader");
+const editor = document.getElementById("editor");
+
+const loginBtn = document.getElementById("loginBtn");
+const editBtn = document.getElementById("editBtn");
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+let currentUser = null;
+let currentId = null;
+
+const fallback = { title: "...", text: "..." };
+
+loginBtn.onclick = () => signInWithPopup(auth, provider);
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+
+  if (!user) {
+    overlay.style.display = "none";
+    appUI.style.display = "none";
+    deny.style.display = "flex";
+    return;
+  }
+
+  deny.style.display = "none";
+  overlay.style.display = "none";
+  appUI.style.display = "flex";
+
+  loadChapters();
+});
+
+async function loadChapters() {
+  sidebar.innerHTML = "";
+
+  if (!currentUser) {
+    renderFallback();
+    return;
+  }
+
+  const snap = await getDocs(collection(db, "chapters"));
+
+  snap.forEach(d => {
+    const div = document.createElement("div");
+    div.className = "chapter";
+    div.innerText = d.data().title;
+    div.onclick = () => openChapter(d.id);
+    sidebar.appendChild(div);
+  });
+}
+
+function renderFallback() {
+  sidebar.innerHTML = "";
+
+  const div = document.createElement("div");
+  div.className = "chapter";
+  div.innerText = fallback.title;
+
+  div.onclick = () => {
+    title.innerText = fallback.title;
+    reader.innerText = fallback.text;
+    reader.classList.remove("hidden");
+    editor.classList.add("hidden");
+    editBtn.classList.add("hidden");
+  };
+
+  sidebar.appendChild(div);
+
+  title.innerText = fallback.title;
+  reader.innerText = fallback.text;
+}
+
+async function openChapter(id) {
+  currentId = id;
+
+  const snap = await getDoc(doc(db, "chapters", id));
+  const data = snap.data();
+
+  title.innerText = data.title;
+  reader.innerText = data.text;
+
+  editor.value = data.text;
+
+  reader.classList.remove("hidden");
+  editor.classList.add("hidden");
+
+  if (currentUser) editBtn.classList.remove("hidden");
+}
+
+editBtn.onclick = () => {
+  reader.classList.add("hidden");
+  editor.classList.remove("hidden");
+  saveBtn.classList.remove("hidden");
+  cancelBtn.classList.remove("hidden");
+  editBtn.classList.add("hidden");
+};
+
+cancelBtn.onclick = () => openChapter(currentId);
+
+saveBtn.onclick = async () => {
+  await setDoc(doc(db, "chapters", currentId), {
+    title: title.innerText,
+    text: editor.value
+  });
+
+  openChapter(currentId);
+};
+
+</script>
 
 </body>
 </html>
