@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8" />
-<title>Archive</title>
+  <meta charset="UTF-8" />
+  <title>Archive</title>
+
   <style>
     body {
       margin: 0;
@@ -30,14 +31,6 @@
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.15);
       backdrop-filter: blur(14px);
-      position: relative;
-    }
-    
-    .close {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      cursor: pointer;
     }
     
     .app {
@@ -106,10 +99,15 @@
       white-space: pre-wrap;
     }
     
-    .edit-btn {
+    .controls {
       position: absolute;
       bottom: 14px;
       right: 14px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    button {
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
       color: white;
@@ -121,155 +119,190 @@
     .hidden {
       display: none;
     }
-    </style>
-    </head>
+  </style>
+</head>
     
-    <body>
+<body>  
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <button id="loginBtn">Login with Google</button>
+    </div>
+  </div>
     
-    <div class="overlay" id="overlay">
-      <div class="modal">
-        <div class="close" id="closeBtn">✕</div>
-        <h3>Login</h3>
-        <button id="loginBtn">Enter</button>
+  <div class="app" id="app">
+    
+    <div class="sidebar">
+      <div id="sidebar"></div>
+    </div>
+    
+    <div class="content">
+      <div class="title" id="title">...</div>
+    
+      <div class="readonly" id="reader">...</div>
+    
+      <textarea id="editor" class="hidden"></textarea>
+    
+      <div class="controls">
+        <button id="editBtn" class="hidden">Edit</button>
+        <button id="saveBtn" class="hidden">Save</button>
+        <button id="cancelBtn" class="hidden">Cancel</button>
       </div>
     </div>
     
-    <div class="app" id="app">
+  </div>
     
-      <div class="sidebar" id="sidebar"></div>
+  <script type="module">
     
-      <div class="content">
-        <div class="title" id="title">...</div>
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithPopup,
+      GoogleAuthProvider,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     
-        <div class="readonly" id="reader">No chapter selected</div>
+    import {
+      getFirestore,
+      collection,
+      doc,
+      getDocs,
+      getDoc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     
-        <textarea id="editor" class="hidden"></textarea>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
+    };
     
-        <button class="edit-btn hidden" id="editBtn">Edit</button>
-      </div>
-    
-    </div>
-    
-    <script>
-    let currentUser = null;
-    let currentChapter = null;
-    let activeChapterId = null;
-    
-    const chapters = [
-      { id: "1", title: "Chapter I", text: "First text..." },
-      { id: "2", title: "Chapter II", text: "Second text..." },
-      { id: "3", title: "Chapter III", text: "Third text..." }
-    ];
+    const appFirebase = initializeApp(firebaseConfig);
+    const auth = getAuth(appFirebase);
+    const db = getFirestore(appFirebase);
+    const provider = new GoogleAuthProvider();
     
     const overlay = document.getElementById("overlay");
-    const app = document.getElementById("app");
-    const sidebar = document.getElementById("sidebar");
+    const appUI = document.getElementById("app");
     
+    const sidebar = document.getElementById("sidebar");
     const title = document.getElementById("title");
     const reader = document.getElementById("reader");
     const editor = document.getElementById("editor");
-    const editBtn = document.getElementById("editBtn");
     
     const loginBtn = document.getElementById("loginBtn");
-    const closeBtn = document.getElementById("closeBtn");
+    const editBtn = document.getElementById("editBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
     
-    function showDenied() {
-      document.body.innerHTML = `
-        <div style="
-          display:flex;
-          height:100vh;
-          justify-content:center;
-          align-items:center;
-          background:#0f0b18;
-          color:white;
-          font-family:monospace;
-          text-align:center;
-          padding:20px;
-        ">
-          Ἡ ἱερὰ οὐράνιος βίβλος οὔπω σοι ἀνεῴχθη.
-        </div>
-      `;
-    }
+    let currentUser = null;
+    let currentId = null;
     
-    function unlockApp() {
+    const fallback = {
+      id: "locked",
+      title: "...",
+      text: "..."
+    };
+    
+    loginBtn.onclick = () => signInWithPopup(auth, provider);
+    
+    onAuthStateChanged(auth, user => {
+      currentUser = user;
+    
       overlay.style.display = "none";
-      app.style.display = "flex";
+      appUI.style.display = "flex";
     
-      renderChapters();
-      openChapter(chapters[0]);
-    }
+      loadChapters();
+    });
     
-    function renderChapters() {
+    async function loadChapters() {
       sidebar.innerHTML = "";
     
-      chapters.forEach(ch => {
+      if (!currentUser) {
+        renderFallback();
+        return;
+      }
+    
+      const snap = await getDocs(collection(db, "chapters"));
+    
+      snap.forEach(d => {
         const div = document.createElement("div");
         div.className = "chapter";
-        div.innerText = ch.title;
+        div.innerText = d.data().title;
     
-        div.onclick = () => {
-          setActive(ch.id);
-          openChapter(ch);
-        };
+        div.onclick = () => openChapter(d.id);
     
         sidebar.appendChild(div);
       });
     }
     
-    function setActive(id) {
-      activeChapterId = id;
+    function renderFallback() {
+      sidebar.innerHTML = "";
     
-      document.querySelectorAll(".chapter").forEach(el => {
-        el.classList.remove("active");
-      });
+      const div = document.createElement("div");
+      div.className = "chapter active";
+      div.innerText = fallback.title;
     
-      const items = document.querySelectorAll(".chapter");
-      const index = chapters.findIndex(c => c.id === id);
+      div.onclick = () => {
+        title.innerText = fallback.title;
+        reader.innerText = fallback.text;
     
-      if (items[index]) {
-        items[index].classList.add("active");
-      }
+        editor.classList.add("hidden");
+        reader.classList.remove("hidden");
+    
+        editBtn.classList.add("hidden");
+      };
+    
+      sidebar.appendChild(div);
+    
+      title.innerText = fallback.title;
+      reader.innerText = fallback.text;
     }
     
-    function openChapter(ch) {
-      currentChapter = ch;
+    async function openChapter(id) {
+      currentId = id;
     
-      reader.style.opacity = 0;
+      const snap = await getDoc(doc(db, "chapters", id));
+      const data = snap.data();
     
-      setTimeout(() => {
-        title.innerText = ch.title;
-        reader.innerText = ch.text;
-        reader.style.opacity = 1;
-      }, 120);
+      title.innerText = data.title;
+      reader.innerText = data.text;
+    
+      editor.value = data.text;
     
       editor.classList.add("hidden");
       reader.classList.remove("hidden");
     
-      editBtn.classList.add("hidden");
+      if (currentUser) {
+        editBtn.classList.remove("hidden");
+      }
     }
-    
-    function enterEditMode() {
-      editor.value = currentChapter.text;
-    
-      reader.classList.add("hidden");
-      editor.classList.remove("hidden");
-      editBtn.classList.remove("hidden");
-    }
-    
-    loginBtn.onclick = () => {
-      currentUser = "me";
-      unlockApp();
-    };
-    
-    closeBtn.onclick = () => {
-      showDenied();
-    };
     
     editBtn.onclick = () => {
-      enterEditMode();
+      reader.classList.add("hidden");
+      editor.classList.remove("hidden");
+    
+      saveBtn.classList.remove("hidden");
+      cancelBtn.classList.remove("hidden");
+      editBtn.classList.add("hidden");
     };
     
-    overlay.style.display = "flex";
+    cancelBtn.onclick = () => {
+      openChapter(currentId);
+    };
+    
+    saveBtn.onclick = async () => {
+      await setDoc(doc(db, "chapters", currentId), {
+        title: title.innerText,
+        text: editor.value
+      });
+    
+      openChapter(currentId);
+    };
+    
   </script>
 
 </body>
