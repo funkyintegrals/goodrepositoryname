@@ -47,6 +47,28 @@ body {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.pages-btn {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  z-index: 9999;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: monospace;
+
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.pages-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .status {
   font-size: 12px;
   letter-spacing: 0.5px;
@@ -243,6 +265,8 @@ body {
   <button id="editBtn" class="hidden">Edit</button>
 </div>
 
+<button id="pagesBtn" class="pages-btn">Pages</button>
+
 <div id="modal">
   <div class="panel">
     <h3>Authentication</h3>
@@ -327,6 +351,7 @@ const editTitleInput = document.getElementById("editTitle");
 const editTextWindow = document.getElementById("editText");
 const saveBtn = document.getElementById("saveBtn");
 const cancelBtn = document.getElementById("cancelBtn");
+const pagesBtn = document.getElementById("pagesBtn");
 
 const lockedData = {
   title: "...",
@@ -508,6 +533,10 @@ saveBtn.onclick = async () => {
     viewMode.classList.remove("hidden");
     await loadChaptersFromFirestore();
   }
+};
+
+pagesBtn.onclick = () => {
+  window.location.href = "/pages";
 };
 
 onAuthStateChanged(auth, user => {
