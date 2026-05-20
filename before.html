@@ -47,7 +47,7 @@ body {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.pages-btn {
+.index-btn {
   position: fixed;
   bottom: 15px;
   left: 15px;
@@ -64,7 +64,7 @@ body {
   transition: background 0.2s, border-color 0.2s;
 }
 
-.pages-btn:hover {
+.index-btn:hover {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.3);
 }
@@ -265,7 +265,7 @@ body {
   <button id="editBtn" class="hidden">Edit</button>
 </div>
 
-<button id="pagesBtn" class="pages-btn">Pages</button>
+<button id="indexBtn" class="index-btn">Back to index</button>
 
 <div id="modal">
   <div class="panel">
@@ -351,7 +351,7 @@ const editTitleInput = document.getElementById("editTitle");
 const editTextWindow = document.getElementById("editText");
 const saveBtn = document.getElementById("saveBtn");
 const cancelBtn = document.getElementById("cancelBtn");
-const pagesBtn = document.getElementById("pagesBtn");
+const indexBtn = document.getElementById("indexBtn");
 
 const lockedData = {
   title: "...",
@@ -535,8 +535,8 @@ saveBtn.onclick = async () => {
   }
 };
 
-pagesBtn.onclick = () => {
-  window.location.href = "/pages";
+indexBtn.onclick = () => {
+  window.location.href = "/index";
 };
 
 onAuthStateChanged(auth, user => {
