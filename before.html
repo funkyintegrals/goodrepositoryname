@@ -386,7 +386,6 @@ async function renderAppMode() {
   editMode.classList.add("hidden");
   viewMode.classList.remove("hidden");
   
-  // Always expose the button if authenticated. Security rules handle actual authorization.
   editBtn.classList.remove("hidden");
 
   await loadChaptersFromFirestore();
@@ -515,7 +514,6 @@ saveBtn.onclick = async () => {
   try {
     const docRef = doc(db, "chapters", selectedChapterId);
     
-    // Server validation check
     await updateDoc(docRef, {
       title: updatedTitle,
       text: updatedText
@@ -528,7 +526,6 @@ saveBtn.onclick = async () => {
   } catch (err) {
     alert("Permission Denied: Your account doesn't have write privileges. Rolling back changes...");
     
-    // UI Recovery Mode: Resets the viewport container to display server-truth values
     editMode.classList.add("hidden");
     viewMode.classList.remove("hidden");
     await loadChaptersFromFirestore();
@@ -536,7 +533,7 @@ saveBtn.onclick = async () => {
 };
 
 indexBtn.onclick = () => {
-  window.location.href = "/pages";
+  window.location.href = "/goodrepositoryname";
 };
 
 onAuthStateChanged(auth, user => {
@@ -547,11 +544,11 @@ onAuthStateChanged(auth, user => {
     authActionBtn.innerText = "Login";
     selectedChapterId = null;
     activeChapters = [];
-    renderGuestMode(); // Runs locally without firing network requests
+    renderGuestMode();
   } else {
     status.innerText = "Logged in";
     authActionBtn.innerText = "Logout";
-    renderAppMode(); // Safe to execute database rules queries now
+    renderAppMode();
   }
 });
 </script>
