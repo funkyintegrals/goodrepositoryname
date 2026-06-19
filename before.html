@@ -121,6 +121,16 @@ body {
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
+/* Added helper styles for drag feedback */
+.chapter.draggable {
+  cursor: grab;
+}
+
+.chapter.dragging {
+  opacity: 0.4;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
 .content {
   flex: 1;
   padding: 24px;
@@ -197,6 +207,13 @@ body {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.autosave-log {
+  margin-right: auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 #modal {
@@ -291,6 +308,8 @@ body {
         <input id="editTitle" type="text" placeholder="Chapter Title">
         <textarea id="editText" placeholder="Chapter content..."></textarea>
         <div class="editor-controls">
+          <span id="autosaveLog" class="autosave-log"></span>
+          <button id="newBtn">New</button>
           <button id="saveBtn">Save</button>
           <button id="cancelBtn">Cancel</button>
         </div>
@@ -313,6 +332,7 @@ import {
   collection,
   getDocs,
   doc,
+  addDoc,
   updateDoc,
   query,
   orderBy
@@ -349,9 +369,11 @@ const readerDisplay = document.getElementById("reader");
 
 const editTitleInput = document.getElementById("editTitle");
 const editTextWindow = document.getElementById("editText");
+const newBtn = document.getElementById("newBtn");
 const saveBtn = document.getElementById("saveBtn");
 const cancelBtn = document.getElementById("cancelBtn");
 const indexBtn = document.getElementById("indexBtn");
+const autosaveLog = document.getElementById("autosaveLog");
 
 const lockedData = {
   title: "...",
@@ -362,7 +384,13 @@ let currentUser = null;
 let activeChapters = [];
 let selectedChapterId = null;
 
+// Track edit state and background timers safely
+let isEditing = false;
+let autoSaveIntervalId = null;
+
 function renderGuestMode() {
+  stopAutosaveCycle();
+  isEditing = false;
   sidebar.innerHTML = "";
   editBtn.classList.add("hidden");
   editMode.classList.add("hidden");
@@ -383,6 +411,8 @@ function renderGuestMode() {
 }
 
 async function renderAppMode() {
+  stopAutosaveCycle();
+  isEditing = false;
   editMode.classList.add("hidden");
   viewMode.classList.remove("hidden");
   
@@ -413,18 +443,7 @@ async function loadChaptersFromFirestore() {
       return;
     }
 
-    activeChapters.forEach(chapter => {
-      const item = document.createElement("div");
-      item.className = "chapter";
-      item.innerText = chapter.title;
-      item.setAttribute("data-id", chapter.id);
-
-      item.onclick = () => {
-        selectChapter(chapter.id);
-      };
-
-      sidebar.appendChild(item);
-    });
+    buildSidebarElements();
 
     if (selectedChapterId && activeChapters.some(c => c.id === selectedChapterId)) {
       selectChapter(selectedChapterId);
@@ -436,6 +455,30 @@ async function loadChaptersFromFirestore() {
     titleDisplay.innerText = "Error Loading Archive";
     readerDisplay.innerText = "Could not fetch resources from database: " + err.message;
   }
+}
+
+// Dedicated UI renderer for matching chapter DOM list structure with current mode
+function buildSidebarElements() {
+  sidebar.innerHTML = "";
+  activeChapters.forEach(chapter => {
+    const item = document.createElement("div");
+    item.className = "chapter";
+    item.innerText = chapter.title;
+    item.setAttribute("data-id", chapter.id);
+
+    // Apply drag mechanics natively only when user is in editor panel mode
+    if (isEditing) {
+      item.classList.add("draggable");
+      item.setAttribute("draggable", "true");
+      attachDragDropListeners(item);
+    }
+
+    item.onclick = () => {
+      selectChapter(chapter.id);
+    };
+
+    sidebar.appendChild(item);
+  });
 }
 
 function selectChapter(id) {
@@ -457,6 +500,104 @@ function selectChapter(id) {
     editTitleInput.value = target.title;
     editTextWindow.value = target.text;
   }
+}
+
+/* NATIVE DRAG AND DROP HANDLING logic */
+function attachDragDropListeners(element) {
+  element.addEventListener("dragstart", (e) => {
+    element.classList.add("dragging");
+    e.dataTransfer.setData("text/plain", element.getAttribute("data-id"));
+  });
+
+  element.addEventListener("dragend", () => {
+    element.classList.remove("dragging");
+  });
+
+  element.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const currentDragging = document.querySelector(".dragging");
+    const structuralSiblings = [...sidebar.querySelectorAll(".chapter:not(.dragging)")];
+    
+    const referenceNextSibling = structuralSiblings.find(sibling => {
+      return e.clientY <= sibling.getBoundingClientRect().top + sibling.getBoundingClientRect().height / 2;
+    });
+    
+    sidebar.insertBefore(currentDragging, referenceNextSibling);
+  });
+
+  element.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    await synchronizeDraggedSequence();
+  });
+}
+
+async function synchronizeDraggedSequence() {
+  const adjustedDomNodes = [...sidebar.querySelectorAll(".chapter")];
+  const sequentialChaptersList = [];
+  
+  if (autosaveLog) autosaveLog.innerText = "Reordering index...";
+
+  for (let idx = 0; idx < adjustedDomNodes.length; idx++) {
+    const docId = adjustedDomNodes[idx].getAttribute("data-id");
+    const internalMatch = activeChapters.find(c => c.id === docId);
+    if (internalMatch) {
+      internalMatch.order = idx;
+      sequentialChaptersList.push(internalMatch);
+      try {
+        const docRef = doc(db, "chapters", docId);
+        await updateDoc(docRef, { order: idx });
+      } catch (dbErr) {
+        console.error("Order index sync problem:", dbErr);
+      }
+    }
+  }
+  activeChapters = sequentialChaptersList.sort((left, right) => left.order - right.order);
+  if (autosaveLog) {
+    autosaveLog.innerText = "Order synced.";
+    setTimeout(() => { if (isEditing) autosaveLog.innerText = ""; }, 2500);
+  }
+}
+
+/* AUTOSAVE BACKGROUND ACTIONS ENGINE */
+function launchAutosaveCycle() {
+  stopAutosaveCycle();
+  autoSaveIntervalId = setInterval(async () => {
+    if (!currentUser || !selectedChapterId || !isEditing) return;
+    
+    const prospectiveTitle = editTitleInput.value.trim();
+    const prospectiveText = editTextWindow.value;
+    
+    if (!prospectiveTitle) return;
+
+    const currentCachedChapter = activeChapters.find(c => c.id === selectedChapterId);
+    if (currentCachedChapter && (currentCachedChapter.title !== prospectiveTitle || currentCachedChapter.text !== prospectiveText)) {
+      if (autosaveLog) autosaveLog.innerText = "Autosaving modifications...";
+      try {
+        const docRef = doc(db, "chapters", selectedChapterId);
+        await updateDoc(docRef, {
+          title: prospectiveTitle,
+          text: prospectiveText
+        });
+        currentCachedChapter.title = prospectiveTitle;
+        currentCachedChapter.text = prospectiveText;
+        
+        const existingNode = sidebar.querySelector(`[data-id="${selectedChapterId}"]`);
+        if (existingNode) existingNode.innerText = prospectiveTitle;
+        
+        if (autosaveLog) autosaveLog.innerText = "Autosaved at " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      } catch (err) {
+        if (autosaveLog) autosaveLog.innerText = "Autosave suspended (Privilege restrictions)";
+      }
+    }
+  }, 60000);
+}
+
+function stopAutosaveCycle() {
+  if (autoSaveIntervalId) {
+    clearInterval(autoSaveIntervalId);
+    autoSaveIntervalId = null;
+  }
+  if (autosaveLog) autosaveLog.innerText = "";
 }
 
 authActionBtn.onclick = async () => {
@@ -488,15 +629,50 @@ loginBtn.onclick = async () => {
 
 editBtn.onclick = () => {
   if (!currentUser || !selectedChapterId) return;
+  isEditing = true;
   viewMode.classList.add("hidden");
   editMode.classList.remove("hidden");
+  buildSidebarElements();
+  selectChapter(selectedChapterId);
+  launchAutosaveCycle();
 };
 
 cancelBtn.onclick = () => {
+  isEditing = false;
+  stopAutosaveCycle();
   editMode.classList.add("hidden");
   viewMode.classList.remove("hidden");
+  buildSidebarElements();
   if (selectedChapterId) {
     selectChapter(selectedChapterId);
+  }
+};
+
+newBtn.onclick = async () => {
+  if (!currentUser) return;
+  
+  const configuredTitle = prompt("Enter new chapter title:");
+  if (!configuredTitle || !configuredTitle.trim()) return;
+
+  const currentMaxOrdinal = activeChapters.length;
+
+  try {
+    if (autosaveLog) autosaveLog.innerText = "Configuring document...";
+    const chaptersCollection = collection(db, "chapters");
+    const freshRef = await addDoc(chaptersCollection, {
+      title: configuredTitle.trim(),
+      text: "New Chapter Content",
+      order: currentMaxOrdinal
+    });
+
+    selectedChapterId = freshRef.id;
+    await loadChaptersFromFirestore();
+    buildSidebarElements();
+    selectChapter(selectedChapterId);
+    if (autosaveLog) autosaveLog.innerText = "Chapter ready.";
+  } catch (err) {
+    alert("Failed to initialize item: " + err.message);
+    if (autosaveLog) autosaveLog.innerText = "";
   }
 };
 
@@ -519,6 +695,8 @@ saveBtn.onclick = async () => {
       text: updatedText
     });
     
+    isEditing = false;
+    stopAutosaveCycle();
     editMode.classList.add("hidden");
     viewMode.classList.remove("hidden");
     await loadChaptersFromFirestore();
@@ -526,6 +704,8 @@ saveBtn.onclick = async () => {
   } catch (err) {
     alert("Permission Denied: Your account doesn't have write privileges. Rolling back changes...");
     
+    isEditing = false;
+    stopAutosaveCycle();
     editMode.classList.add("hidden");
     viewMode.classList.remove("hidden");
     await loadChaptersFromFirestore();
