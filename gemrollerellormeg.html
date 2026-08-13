@@ -101,8 +101,8 @@ static PRIZES = [
           const weights = GameSession.JEWELLERY.map((_, i) => Math.pow(2, -(i + 1) / this.multi));
           const lastIndex = weights.length - 1;
           weights[lastIndex] = weights[lastIndex] * JACKPOT_WEIGHT;
-            
-          return weights
+          return weights;
+        }
             
 
         roll() {
