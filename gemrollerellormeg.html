@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>!?GEM ROLLERELLOR MEG?!</title>
+  <style>
+    body { font-family: sans-serif; background-color: #f4f4f4; padding: 20px; }
+    .game-box { max-width:720px; padding: 20px; border: 2px solid #333; border-radius: 10px; background: #fff; box-shadow: 4px 4px 0px #333; margin: 0 auto; }
+    .gem-display { font-size: 1.5rem; font-weight: bold; color: #2c3e50; margin: 15px 0; min-height: 60px; }
+    .stats { color: #666; font-family: monospace; background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+    .btn { padding: 12px 25px; cursor:pointer; border-radius: 5px; border: none; font-weight: bold; }
+    #rollBtn { background: #28a745; color: white; }
+    #autoRollBtn { background:#007bff; color:white; margin-left: 10px; }
+    #upgradeBtn { margin-left: 10px; background:#f0ad4e; color:#111; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #login-ui { margin-bottom: 16px; }
+    input { padding: 8px 10px; border-radius: 4px; border:1px solid #ccc; }
+    .center { text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="game-box">
+    <h2 class="center">💎 Gem Roller (Firebase-backed)</h2>
+
+    <div id="login-ui" class="center">
+        <input id="userCodeInput" placeholder="Enter Username">
+        <button id="loadGameBtn" class="btn" style="background:#6c757d;color:#fff;margin-left:8px;">Load Progress</button>
+    </div>
+
+    <div id="game-ui" style="display:none;">
+        <div class="stats">
+            Player: <span id="pName"></span> | 
+            Multi: <span id="pMulti"></span> | 
+            Rolls: <span id="pRolls">0</span>
+        </div>
+        <div class="stats" style="background: #fffbe6;">
+            Gold: <span id="pGold">0</span>
+        </div>
+        
+        <div id="rollResult" class="gem-display center">Ready to roll?</div>
+        
+        <div class="center">
+          <button id="rollBtn" class="btn">ROLL</button>
+          <button id="autoRollBtn" class="btn">Auto Roll: OFF</button>
+          <button id="upgradeBtn" class="btn">Upgrade Luck (Cost: <span id="upgradeCost">5</span>)</button>
+        </div>
+
+        <p id="saveStatus" style="font-size: 11px; color: #888; margin-top: 15px; font-style: italic;"></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+          apiKey: "AIzaSyCGdF9m5jAC_PV7ainjGr2vsRvxRSuHRgE", 
+          authDomain: "myrithm-storage.firebaseapp.com", 
+          projectId: "myrithm-storage", 
+          storageBucket: "myrithm-storage.firebasestorage.app", 
+          messagingSenderId: "1069448713700", 
+          appId: "1:1069448713700:web:248cd3e46328c2a89823f1", 
+          measurementId: "G-37Y5JS94HH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const MULTI_STEP = 0.5;
+    const ROLL_COUNT = 5;
+    const SHUFFLE_INTERVAL = 80;
+    const SHUFFLE_DURATION = 500;
+    const COST_MULTI = 1.6;
+
+    class GameSession {
+        static JEWELLERY = [
+  "Jasper", "Agate", "Onyx", "Tiger's Eye", "Turquoise", "Lapis Lazuli",
+  "Citrine", "Garnet", "Peridot", "Amethyst", "Topaz", "Aquamarine",
+  "Tourmaline", "Opal", "Zircon", "Spinel", "Emerald", "Sapphire",
+  "Ruby", "Alexandrite", "Diamond", "Spinel Ruby", "Blue Diamond",
+  "Paraiba Tourmaline", "Red Beryl", "Musgravite", "Taaffeite", 
+  "Painite", "Jeremejevite", "Galvanised Steel"
+];
+
+static PRIZES = [
+  1, 3, 8, 15, 30, 60, 120, 250, 500, 1000, 2500, 5000, 12000, 25000,
+  50000, 120000, 250000, 600000, 1500000, 2500000, 5000000, 7500000,
+  10000000, 15000000, 25000000, 40000000, 65000000, 100000000, 
+  180000000, 99999999999999999999999999999999999999999999999999999999
+];
+
+        constructor(name, multi = 1.0, gold = 0, rollcnt = 0) {
+            this.name = name;
+            this.multi = parseFloat(multi);
+            this.gold = parseInt(gold);
+            this.rollcnt = parseInt(rollcnt);
+        }
+
+        getWeights() {
+            return GameSession.JEWELLERY.map((_, i) => Math.pow(2, -(i + 1) / this.multi));
+        }
+
+        roll() {
+            this.rollcnt++;
+            const weights = this.getWeights();
+            const total = weights.reduce((a, b) => a + b, 0);
+            let r = Math.random() * total;
+            let cumulative = 0;
+
+            for (let i = 0; i < weights.length; i++) {
+                cumulative += weights[i];
+                if (r <= cumulative) {
+                    const gain = GameSession.PRIZES[i];
+                    this.gold += gain;
+                    return { gem: GameSession.JEWELLERY[i], gain: gain, rarity: Math.pow(2, i + 1) };
+                }
+            }
+        }
+    }
+
+    // State
+    let activeGame = null;
+    let autoRollInterval = null;
+    let autoRollEnabled = false;
+
+    // Firebase-backed load/save (preserved behavior)
+    document.getElementById('loadGameBtn').onclick = async () => {
+        const name = document.getElementById('userCodeInput').value;
+        if (!name) return alert("Username required!");
+
+        const docSnap = await getDoc(doc(db, "players", name));
+        if (docSnap.exists()) {
+            const d = docSnap.data();
+            activeGame = new GameSession(name, d.multi, d.gold, d.rollcnt);
+        } else {
+            activeGame = new GameSession(name);
+        }
+
+        document.getElementById('login-ui').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'block';
+        updateDisplay();
+        document.getElementById('saveStatus').innerText = "Loaded from Firestore";
+    };
+
+    document.getElementById('autoRollBtn').onclick = () => {
+      const btn = document.getElementById('autoRollBtn');
+      if (!activeGame) return;
+      
+      autoRollEnabled = !autoRollEnabled;
+      btn.innerText = `Auto Roll: ${autoRollEnabled ? 'ON' : 'OFF'}`;
+      
+      if (autoRollEnabled) {
+          autoRollInterval = setInterval(() => {
+              if (!document.getElementById('rollBtn').disabled) {
+                  document.getElementById('rollBtn').click();
+              }
+          }, SHUFFLE_DURATION + 200);
+      } else {
+          clearInterval(autoRollInterval);
+      }
+    };
+
+    document.getElementById('rollBtn').onclick = async () => {
+      if (!activeGame || document.getElementById('rollBtn').disabled) return;
+
+      const btn = document.getElementById('rollBtn');
+      const resDiv = document.getElementById('rollResult');
+
+      btn.disabled = true;
+
+      // Roll results
+      const results = [];
+      for (let i = 0; i < ROLL_COUNT; i++) {
+          results.push(activeGame.roll());
+      }
+
+      // Clear display and create lines
+      resDiv.innerHTML = "";
+      const lineDivs = [];
+      for (let i = 0; i < ROLL_COUNT; i++) {
+          const div = document.createElement("div");
+          div.id = `line${i}`;
+          resDiv.appendChild(div);
+          lineDivs.push(div);
+      }
+
+      // Start simultaneous shuffling for each line
+      const intervals = lineDivs.map((lineDiv) =>
+          setInterval(() => {
+              const randomGem = GameSession.JEWELLERY[Math.floor(Math.random() * GameSession.JEWELLERY.length)];
+              lineDiv.innerHTML = `💎 <span style="color:#aaa">${randomGem}...</span>`;
+          }, SHUFFLE_INTERVAL)
+      );
+
+      // Sequential reveal of final results
+      results.forEach((r, i) => {
+          setTimeout(() => {
+              clearInterval(intervals[i]);
+              const lineDiv = lineDivs[i];
+              lineDiv.innerHTML = `💎 <strong>${r.gem}</strong> <small style="color:#28a745;">+${r.gain.toLocaleString()} Gold (1 in ${r.rarity.toLocaleString()})</small>`;
+              
+              if (i === results.length - 1) {
+                  btn.disabled = false;
+                  updateDisplay();
+                  if (activeGame.rollcnt % 3 === 0) autoSave();
+              }
+          }, (i + 1) * (SHUFFLE_DURATION / ROLL_COUNT) * 2);
+      });
+    };
+
+    document.getElementById('upgradeBtn').onclick = async () => {
+        if (!activeGame) return;
+        let n = Math.round((activeGame.multi - 1.0) / MULTI_STEP);
+        let cost = Math.floor(5 * Math.pow(COST_MULTI, n));
+
+        if (activeGame.gold >= cost) {
+            activeGame.gold -= cost;
+            activeGame.multi = Math.round((activeGame.multi + MULTI_STEP) * 100) / 100;
+            updateDisplay();
+            await autoSave();
+        } else {
+            alert("Not enough gold!");
+        }
+    };
+
+    async function autoSave() {
+        document.getElementById('saveStatus').innerText = "Syncing with cloud...";
+        await setDoc(doc(db, "players", activeGame.name), {
+            multi: activeGame.multi,
+            gold: activeGame.gold,
+            rollcnt: activeGame.rollcnt
+        });
+        setTimeout(() => { document.getElementById('saveStatus').innerText = "Progress Saved ✅"; }, 500);
+    }
+
+    function updateDisplay() {
+        if (!activeGame) return;
+        let n = Math.round((activeGame.multi - 1.0) / MULTI_STEP);
+        let nextCost = Math.floor(5 * Math.pow(COST_MULTI, n));
+        
+        document.getElementById('pName').innerText = activeGame.name;
+        document.getElementById('pMulti').innerText = activeGame.multi.toFixed(2);
+        document.getElementById('pGold').innerText = activeGame.gold.toLocaleString();
+        document.getElementById('pRolls').innerText = activeGame.rollcnt;
+        document.getElementById('upgradeCost').innerText = nextCost.toLocaleString();
+    }
+  </script>
+</body>
+</html>
