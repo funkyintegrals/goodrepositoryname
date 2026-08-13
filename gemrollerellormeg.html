@@ -20,7 +20,7 @@
 </head>
 <body>
   <div class="game-box">
-    <h2 class="center">💎 Gem Roller (Firebase-backed)</h2>
+    <h2 class="center">💎 Gem RollerelloR meG 💎/h2>
 
     <div id="login-ui" class="center">
         <input id="userCodeInput" placeholder="Enter Username">
@@ -71,6 +71,7 @@
     const SHUFFLE_INTERVAL = 80;
     const SHUFFLE_DURATION = 500;
     const COST_MULTI = 1.6;
+    const JACKPOT_WEIGHT = 1e-9;
 
     class GameSession {
         static JEWELLERY = [
@@ -97,8 +98,12 @@ static PRIZES = [
         }
 
         getWeights() {
-            return GameSession.JEWELLERY.map((_, i) => Math.pow(2, -(i + 1) / this.multi));
-        }
+          const weights = GameSession.JEWELLERY.map((_, i) => Math.pow(2, -(i + 1) / this.multi));
+          const lastIndex = weights.length - 1;
+          weights[lastIndex] = weights[lastIndex] * JACKPOT_WEIGHT;
+            
+          return weights
+            
 
         roll() {
             this.rollcnt++;
@@ -118,12 +123,10 @@ static PRIZES = [
         }
     }
 
-    // State
     let activeGame = null;
     let autoRollInterval = null;
     let autoRollEnabled = false;
 
-    // Firebase-backed load/save (preserved behavior)
     document.getElementById('loadGameBtn').onclick = async () => {
         const name = document.getElementById('userCodeInput').value;
         if (!name) return alert("Username required!");
