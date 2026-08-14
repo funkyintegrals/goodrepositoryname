@@ -121,7 +121,6 @@ body {
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
-/* Added helper styles for drag feedback */
 .chapter.draggable {
   cursor: grab;
 }
@@ -384,7 +383,6 @@ let currentUser = null;
 let activeChapters = [];
 let selectedChapterId = null;
 
-// Track edit state and background timers safely
 let isEditing = false;
 let autoSaveIntervalId = null;
 
@@ -457,7 +455,6 @@ async function loadChaptersFromFirestore() {
   }
 }
 
-// Dedicated UI renderer for matching chapter DOM list structure with current mode
 function buildSidebarElements() {
   sidebar.innerHTML = "";
   activeChapters.forEach(chapter => {
@@ -466,7 +463,6 @@ function buildSidebarElements() {
     item.innerText = chapter.title;
     item.setAttribute("data-id", chapter.id);
 
-    // Apply drag mechanics natively only when user is in editor panel mode
     if (isEditing) {
       item.classList.add("draggable");
       item.setAttribute("draggable", "true");
@@ -502,7 +498,6 @@ function selectChapter(id) {
   }
 }
 
-/* NATIVE DRAG AND DROP HANDLING logic */
 function attachDragDropListeners(element) {
   element.addEventListener("dragstart", (e) => {
     element.classList.add("dragging");
@@ -558,7 +553,6 @@ async function synchronizeDraggedSequence() {
   }
 }
 
-/* AUTOSAVE BACKGROUND ACTIONS ENGINE */
 function launchAutosaveCycle() {
   stopAutosaveCycle();
   autoSaveIntervalId = setInterval(async () => {
